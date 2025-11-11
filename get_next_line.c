@@ -16,7 +16,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-size_t	ft_strlen_new_line(const char *s)
+size_t	find_nl(const char *s)
 {
 	size_t	i;
 
@@ -26,39 +26,76 @@ size_t	ft_strlen_new_line(const char *s)
 	return (i);
 }
 
-char	*get_next_line(int fd)
+char	*read_from_fd(int fd, char *left_over)
 {
 	char	*res;
-	char	*tmp;
-	char	*buffer;
-	char	*leftover;
-	int		error_value;
+	int		read_res;
 
-	tmp = malloc(sizeof(char) * BUFFER_SIZE);
-	buffer = 
-	if (!tmp)
-		return (NULL);
-	error_value = read(fd, tmp, BUFFER_SIZE);
-	if (error_value < 0)
-		return (NULL);
-	while (!ft_strchr(tmp, '\n'))
+	if (left_over == NULL || *left_over == '\0')
 	{
-		ft_strjoin(buffer, tmp);
-		error_value = read(fd, tmp, BUFFER_SIZE);
+		res = malloc(sizeof(char) * BUFFER_SIZE);
+		read_res = read(fd, res, BUFFER_SIZE);
+		res[BUFFER_SIZE] = '\0';
 	}
-	res = ft_substr(buffer, 0, ft_strlen_new_line(buffer) + 1);
-	leftover = ft_strdup(buffer + ft_strlen_new_line(buffer) + 1);
-	free(tmp);
+	else
+		res = ft_strdup(left_over);
+	if (read_res <= 0)
+	{
+		free(res);
+		return (NULL);
+	}
 	return (res);
+}
+
+char	*find_next_nl(char *buffer, int fd, char *temp_buffer)
+{
+	int		read_res;
+
+	while (ft_strchr(buffer, '\n') == NULL)
+	{
+		read_res = read(fd, temp_buffer, BUFFER_SIZE);
+		if (read_res < 0)
+		{
+			free(buffer);
+			free(temp_buffer);
+			return (NULL);
+		}
+		if (read_res == 0)
+			break ;
+		buffer = ft_strjoin(buffer, temp_buffer);
+	}
+	return (buffer);
+}
+
+char	*get_next_line(int fd)
+{
+	char		*temp_buffer;
+	char		*buffer;
+	char		*res;
+	static char	*left_over;
+	int			end;
+
+	temp_buffer = read_from_fd(fd, left_over);
+	if (!temp_buffer)
+		return (NULL);
+	buffer = NULL;
+	buffer = ft_strjoin(buffer, temp_buffer);
+	buffer = find_next_nl(buffer, fd, temp_buffer);
+	if (!buffer)
+		return (NULL);
+	end = find_nl(buffer) + 2;
+	left_over = ft_substr(buffer, end, ft_strlen(buffer));
+	return (free(temp_buffer), ft_substr(buffer, 0, end));
 }
 
 int main()
 {
 	char *res;
 	int i = 0;
-	while (i < 187)
+	int fd = open("text.txt", O_RDONLY);
+	while (i < 10)
 	{
-		res = get_next_line(open("text.txt", O_RDONLY));
+		res = get_next_line(fd);
 		printf("%s", res);
 		i++;
 	}
