@@ -10,58 +10,49 @@
 /*                                                                            */
 /* ************************************************************************** */
 #include "get_next_line.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
 
-size_t	find_nl(const char *s)
+char	*read_initial(int fd, char *left_over)
 {
-	size_t	i;
-
-	i = 0;
-	while (s[i] != '\n')
-		i++;
-	return (i);
-}
-
-char	*read_from_fd(int fd, char *left_over)
-{
-	char	*res;
+	char	*buffer;
 	int		read_res;
 
-	if (left_over == NULL || *left_over == '\0')
+	if (!left_over || !*left_over)
 	{
-		res = malloc(sizeof(char) * BUFFER_SIZE);
-		read_res = read(fd, res, BUFFER_SIZE);
-		res[BUFFER_SIZE] = '\0';
+		if (left_over)
+			free(left_over);
+		buffer = malloc(sizeof(char) * (BUFFER_SIZE + 1));
+		if (!buffer)
+			return (NULL);
+		read_res = read(fd, buffer, BUFFER_SIZE);
+		if (read_res <= 0)
+			return (free(buffer), NULL);
+		buffer[read_res] = 0;
 	}
 	else
-		res = ft_strdup(left_over);
-	if (read_res <= 0)
 	{
-		free(res);
-		return (NULL);
+		buffer = ft_strdup(left_over);
+		free(left_over);
 	}
-	return (res);
+	return (buffer);
 }
 
-char	*find_next_nl(char *buffer, int fd, char *temp_buffer)
+char	*read_till_nl(int fd, char *buffer)
 {
+	char	*temp_buffer;
 	int		read_res;
 
-	while (ft_strchr(buffer, '\n') == NULL)
+	temp_buffer = 0;
+	while (!ft_strchr(buffer, '\n'))
 	{
-		read_res = read(fd, temp_buffer, BUFFER_SIZE);
-		if (read_res < 0)
-		{
-			free(buffer);
-			free(temp_buffer);
+		temp_buffer = malloc(sizeof(char) * (BUFFER_SIZE + 1));
+		if (!temp_buffer)
 			return (NULL);
-		}
-		if (read_res == 0)
-			break ;
+		read_res = read(fd, temp_buffer, BUFFER_SIZE);
+		temp_buffer[read_res] = 0;
+		if (read_res < 0)
+			return (free(temp_buffer), NULL);
+		else if (read_res == 0)
+			return (ft_strjoin(buffer, temp_buffer));
 		buffer = ft_strjoin(buffer, temp_buffer);
 	}
 	return (buffer);
@@ -69,34 +60,26 @@ char	*find_next_nl(char *buffer, int fd, char *temp_buffer)
 
 char	*get_next_line(int fd)
 {
-	char		*temp_buffer;
-	char		*buffer;
-	char		*res;
 	static char	*left_over;
+	char		*result;
+	char		*buffer;
 	int			end;
 
-	temp_buffer = read_from_fd(fd, left_over);
-	if (!temp_buffer)
-		return (NULL);
-	buffer = NULL;
-	buffer = ft_strjoin(buffer, temp_buffer);
-	buffer = find_next_nl(buffer, fd, temp_buffer);
+	end = 0;
+	buffer = read_initial(fd, left_over);
 	if (!buffer)
 		return (NULL);
-	end = find_nl(buffer) + 2;
-	left_over = ft_substr(buffer, end, ft_strlen(buffer));
-	return (free(temp_buffer), ft_substr(buffer, 0, end));
-}
-
-int main()
-{
-	char *res;
-	int i = 0;
-	int fd = open("text.txt", O_RDONLY);
-	while (i < 10)
-	{
-		res = get_next_line(fd);
-		printf("%s", res);
-		i++;
-	}
+	buffer = read_till_nl(fd, buffer);
+	if (!buffer)
+		return (NULL);
+	while (buffer[end] && buffer[end] != '\n')
+		end++;
+	if (buffer[end] == '\n')
+		end++;
+	result = ft_substr(buffer, 0, end);
+	if (!result)
+		return (free(buffer), NULL);
+	left_over = ft_strdup(buffer + end);
+	free(buffer);
+	return (result);
 }

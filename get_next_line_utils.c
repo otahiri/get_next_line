@@ -66,7 +66,7 @@ size_t	ft_strlen(const char *s)
 	return (i);
 }
 
-char	*ft_strdup(const char *s)
+char	*ft_strdup(char *s)
 {
 	char	*dup;
 	size_t	i;
@@ -85,7 +85,7 @@ char	*ft_strdup(const char *s)
 	return (dup);
 }
 
-char	*ft_strjoin(char const *s1, char const *s2)
+char	*ft_strjoin(char *s1, char *s2)
 {
 	char	*res_str;
 	size_t	len;
@@ -106,6 +106,7 @@ char	*ft_strjoin(char const *s1, char const *s2)
 	while (len < total_len)
 		res_str[len++] = s2[temp_len++];
 	res_str[len] = '\0';
-	free((char *)s1);
+	free(s1);
+	free(s2);
 	return (res_str);
 }
