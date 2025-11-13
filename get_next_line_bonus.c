@@ -9,7 +9,7 @@
 /*   Updated: 2025/11/13 16:06:31 by otahiri-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-#include "get_next_line.h"
+#include "get_next_line_bonus.h"
 
 char	*read_initial(int fd, char **left_over)
 {
@@ -23,7 +23,8 @@ char	*read_initial(int fd, char **left_over)
 		buffer = malloc(sizeof(char) * ((size_t)BUFFER_SIZE + 1));
 		if (!buffer)
 			return (NULL);
-		read_res = read(fd, buffer, BUFFER_SIZE);
+		read_res = read(fd, buffer,
+				(size_t)BUFFER_SIZE);
 		if (read_res <= 0)
 			return (ft_free((void **)&buffer));
 		buffer[read_res] = 0;
@@ -52,7 +53,7 @@ char	*read_till_nl(int fd, char *buffer)
 	temp_buffer = 0;
 	while (!ft_strchr(buffer, '\n'))
 	{
-		temp_buffer = malloc(sizeof(char) * (BUFFER_SIZE + 1));
+		temp_buffer = malloc(sizeof(char) * ((size_t)BUFFER_SIZE + 1));
 		if (!temp_buffer)
 			return (NULL);
 		read_res = read(fd, temp_buffer, BUFFER_SIZE);
@@ -68,13 +69,15 @@ char	*read_till_nl(int fd, char *buffer)
 
 char	*get_next_line(int fd)
 {
-	static char	*left_over;
+	static char	*left_over[1024];
 	char		*result;
 	char		*buffer;
 	int			end;
 
 	end = 0;
-	buffer = read_initial(fd, &left_over);
+	if (fd > 1024)
+		return (NULL);
+	buffer = read_initial(fd, &left_over[fd]);
 	if (!buffer)
 		return (NULL);
 	buffer = read_till_nl(fd, buffer);
@@ -87,7 +90,7 @@ char	*get_next_line(int fd)
 	result = ft_substr(buffer, 0, end);
 	if (!result)
 		return (ft_free((void **)&buffer));
-	left_over = ft_strdup(buffer + end);
+	left_over[fd] = ft_strdup(buffer + end);
 	ft_free((void **)&buffer);
 	return (result);
 }
